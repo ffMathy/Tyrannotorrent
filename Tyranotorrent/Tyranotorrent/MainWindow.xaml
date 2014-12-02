@@ -1,0 +1,22 @@
+﻿<Window x:Class="Tyranotorrent.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:Tyranotorrent"
+        mc:Ignorable="d"
+        Title="Tyranotorrent" Height="350" Width="525">
+    
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition />
+        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition />
+            <ColumnDefinition Width="Auto" />
+        </Grid.ColumnDefinitions>
+        <Grid Grid.Column="0">
+            <Label FontSize="20" FontWeight="ExtraLight" Margin="10" Foreground="#39f" VerticalAlignment="Top">DOWNLOADS</Label>
+        </Grid>
+    </Grid>
+</Window>
