@@ -21,7 +21,12 @@ namespace Tyranotorrent
             if (Debugger.IsAttached)
             {
                 var viewModel = MainWindowViewModel.Instance;
-                //TODO: call viewModel.QueueTorrent, to start downloading some torrents.
+
+                var desktopDirectory = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
+                foreach (var file in Directory.GetFiles(desktopDirectory, "*.torrent"))
+                {
+                    viewModel.QueueTorrent(file);
+                }
             }
 
             var window = new MainWindow();

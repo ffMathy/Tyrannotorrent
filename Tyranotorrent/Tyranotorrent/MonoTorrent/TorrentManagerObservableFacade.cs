@@ -20,6 +20,9 @@ namespace Tyranotorrent.MonoTorrent
 
         private LinkedList<int> lastDownloadSpeeds;
 
+        private int averageDownloadSpeedShortTerm;
+        private int averageDownloadSpeedLongTerm;
+
         private TorrentManager torrentManager;
 
         private Dispatcher mainThreadDispatcher;
@@ -29,39 +32,113 @@ namespace Tyranotorrent.MonoTorrent
             get { return torrentManager; }
         }
 
+        public string State
+        {
+            get
+            {
+                var totalSeconds = averageDownloadSpeedLongTerm == 0 ? 0 : (torrentManager.Torrent.Size - torrentManager.Monitor.DataBytesDownloaded) / averageDownloadSpeedLongTerm;
+
+                var seconds = Math.Floor(totalSeconds % 60.0);
+                var minutes = Math.Floor(totalSeconds / 60.0 % 60.0);
+                var hours = Math.Floor(totalSeconds / 60.0 / 60.0 % 60.0);
+                var days = Math.Floor(totalSeconds / 60.0 / 60.0 / 60.0 % 24.0);
+                var months = Math.Floor(totalSeconds / 60.0 / 60.0 / 60.0 / 24.0 % 30.5);
+                var years = Math.Floor(totalSeconds / 60.0 / 60.0 / 60.0 / 24.0 / 30.5 % 12.0);
+
+                var timeLeft = "";
+                if (years > 0)
+                {
+                    timeLeft += years + "y ";
+                }
+                if (months > 0)
+                {
+                    timeLeft += months + "m ";
+                }
+                if (days > 0 && years == 0)
+                {
+                    timeLeft += days + "d ";
+                }
+                if (months == 0)
+                {
+                    timeLeft += string.Format("{0:00}", hours) + "h ";
+                }
+                if (days == 0)
+                {
+                    timeLeft += string.Format("{0:00}", minutes) + "m ";
+                }
+
+                if (timeLeft.Length > 0) timeLeft = timeLeft.Substring(0, timeLeft.Length - 1);
+
+                return torrentManager.State + "\n" + timeLeft;
+            }
+        }
+
         public string DownloadSpeed
         {
             get
             {
-                var downloadSpeed = lastDownloadSpeeds.Count > 0 ? lastDownloadSpeeds.Average() : 0;
+                var byteDownloadSpeed = (double)averageDownloadSpeedShortTerm;
+                var bitDownloadSpeed = byteDownloadSpeed * 8;
 
-                var unit = "B/s";
+                var byteUnit = "B/s";
+                var bitUnit = "b/s";
 
-                if (downloadSpeed > 1024)
+                if(bitDownloadSpeed > 1024)
                 {
-                    unit = "KB/s";
-                    downloadSpeed /= 1024.0;
+                    bitUnit = "Kb/s";
+                    bitDownloadSpeed /= 1024.0;
+                }
+                if (byteDownloadSpeed > 1024)
+                {
+                    byteUnit = "KB/s";
+                    byteDownloadSpeed /= 1024.0;
                 }
 
-                if (downloadSpeed > 1024)
+                if (bitDownloadSpeed > 1024)
                 {
-                    unit = "MB/s";
-                    downloadSpeed /= 1024.0;
+                    bitUnit = "Mb/s";
+                    bitDownloadSpeed /= 1024.0;
+                }
+                if (byteDownloadSpeed > 1024)
+                {
+                    byteUnit = "MB/s";
+                    byteDownloadSpeed /= 1024.0;
                 }
 
-                if (downloadSpeed > 1024)
+                if (bitDownloadSpeed > 1024)
                 {
-                    unit = "GB/s";
-                    downloadSpeed /= 1024.0;
+                    bitUnit = "Gb/s";
+                    bitDownloadSpeed /= 1024.0;
+                }
+                if (byteDownloadSpeed > 1024)
+                {
+                    byteUnit = "GB/s";
+                    byteDownloadSpeed /= 1024.0;
                 }
 
-                if (downloadSpeed > 1024)
+                if (bitDownloadSpeed > 1024)
                 {
-                    unit = "TB/s";
-                    downloadSpeed /= 1024.0;
+                    bitUnit = "Tb/s";
+                    bitDownloadSpeed /= 1024.0;
+                }
+                if (byteDownloadSpeed > 1024)
+                {
+                    byteUnit = "TB/s";
+                    byteDownloadSpeed /= 1024.0;
                 }
 
-                return Math.Round(downloadSpeed, 2) + " " + unit;
+                if (bitDownloadSpeed > 1024)
+                {
+                    bitUnit = "Pb/s";
+                    bitDownloadSpeed /= 1024.0;
+                }
+                if (byteDownloadSpeed > 1024)
+                {
+                    byteUnit = "PB/s";
+                    byteDownloadSpeed /= 1024.0;
+                }
+
+                return (byteDownloadSpeed == 0 ? "0" : string.Format("{0:0.00}", byteDownloadSpeed)) + " " + byteUnit + "\n" + (bitDownloadSpeed == 0 ? "0" : string.Format("{0:0.00}", bitDownloadSpeed)) + " " + bitUnit;
             }
         }
 
@@ -149,12 +226,12 @@ namespace Tyranotorrent.MonoTorrent
         {
             while (true)
             {
-                await Task.Delay(250);
+                await Task.Delay(100);
 
                 var currentSpeed = torrentManager.Monitor.DownloadSpeed;
                 lastDownloadSpeeds.AddFirst(currentSpeed);
 
-                while (lastDownloadSpeeds.Count > 100)
+                while (lastDownloadSpeeds.Count > 1000 * 6)
                 {
                     lastDownloadSpeeds.RemoveLast();
                 }
@@ -166,6 +243,7 @@ namespace Tyranotorrent.MonoTorrent
         private void Manager_TorrentStateChanged(object sender, TorrentStateChangedEventArgs e)
         {
             Debug.WriteLine(Name + " changed state to from " + e.OldState + " to " + e.NewState);
+            NotifyPropertyChanged("State");
             if (e.NewState == TorrentState.Metadata)
             {
                 NotifyPropertyChanged("Name");
@@ -190,24 +268,11 @@ namespace Tyranotorrent.MonoTorrent
 
         private void Update()
         {
+            averageDownloadSpeedShortTerm = (int)(lastDownloadSpeeds.Count > 0 ? lastDownloadSpeeds.Take(10).Average() : 0);
+            averageDownloadSpeedLongTerm = (int)(lastDownloadSpeeds.Count > 0 ? lastDownloadSpeeds.Average() : 0);
+
             NotifyPropertyChanged("DownloadSpeed");
-
-            if (Debugger.IsAttached)
-            {
-                var tracker = torrentManager.TrackerManager.CurrentTracker;
-                if (tracker != null)
-                {
-                    if (!string.IsNullOrEmpty(tracker.WarningMessage))
-                    {
-                        Debug.WriteLine("Warning: " + tracker.WarningMessage);
-                    }
-
-                    if (!string.IsNullOrEmpty(tracker.FailureMessage))
-                    {
-                        Debug.WriteLine("Error: " + tracker.FailureMessage);
-                    }
-                }
-            }
+            NotifyPropertyChanged("State");
         }
 
         public event PropertyChangedEventHandler PropertyChanged;

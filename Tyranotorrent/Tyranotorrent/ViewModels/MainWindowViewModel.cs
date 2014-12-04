@@ -8,9 +8,11 @@ using System;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Net;
+using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
 using Tyranotorrent.MonoTorrent;
+using System.Collections.Generic;
 
 namespace Tyranotorrent.ViewModels
 {
@@ -26,13 +28,15 @@ namespace Tyranotorrent.ViewModels
         {
             Downloads = new ObservableCollection<TorrentManagerViewModelFacade>();
 
-            const int port = 25555;
+            var random = new Random((int)DateTime.UtcNow.Ticks);
+            var port = 25555 + random.Next(-100, 100);
 
             var engineSettings = new EngineSettings(Environment.CurrentDirectory, port);
             engineSettings.PreferEncryption = false;
             engineSettings.AllowedEncryption = EncryptionTypes.All;
 
-            torrentSettings = new TorrentSettings(4, 150, 0, 0);
+            torrentSettings = new TorrentSettings(1, 50, 0, 1);
+            torrentSettings.InitialSeedingEnabled = false;
 
             clientEngine = new ClientEngine(engineSettings);
             clientEngine.CriticalException += ClientEngine_CriticalException;
@@ -77,13 +81,18 @@ namespace Tyranotorrent.ViewModels
             Torrent torrent;
             if (Torrent.TryLoad(torrentPath, out torrent))
             {
-                var savePath = Path.Combine(Environment.CurrentDirectory, torrent.Name);
+                var sanitizedName = SanitizeFilePath(torrent.Name);
+                var savePath = Path.Combine(Environment.CurrentDirectory, sanitizedName);
                 manager = new TorrentManager(torrent, savePath, torrentSettings);
             } else if(torrentPath.StartsWith("magnet:"))
             {
-                var link = new MagnetLink(torrentPath);
-                var savePath = Path.Combine(Environment.CurrentDirectory, link.Name);
-                manager = new TorrentManager(link, savePath, torrentSettings, Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Downloads", "Temporary.torrent"));
+                //TODO: magnet links are not working. at least they don't seem to. it's as if it doesn't get the proper announce list. also, it doesn't seem to save the torrent.
+
+                var magnetLink = new MagnetLink(torrentPath);
+                var sanitizedName = SanitizeFilePath(magnetLink.Name);
+                var savePath = Path.Combine(Environment.CurrentDirectory, sanitizedName);
+                var torrentSavePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Downloads", sanitizedName + ".torrent");
+                manager = new TorrentManager(magnetLink, savePath, torrentSettings, torrentSavePath);
             } else
             {
                 MessageBox.Show("Unrecognized torrent format.", "Sorry about that", MessageBoxButton.OK, MessageBoxImage.Exclamation);
@@ -98,6 +107,16 @@ namespace Tyranotorrent.ViewModels
             Downloads.Add(viewModel);
 
             manager.Start();
+        }
+
+        private string SanitizeFilePath(string input)
+        {
+            foreach (var illegalCharacter in Path.GetInvalidPathChars().Union(Path.GetInvalidFileNameChars()))
+            {
+                input = input.Replace(illegalCharacter, '_');
+            }
+            while (input.Contains("__")) input = input.Replace("__", "_");
+            return input;
         }
 
         private void ViewModel_TorrentDownloaded(TorrentManagerViewModelFacade torrent)
