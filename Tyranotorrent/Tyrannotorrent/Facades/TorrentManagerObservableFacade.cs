@@ -38,8 +38,7 @@ namespace Tyrannotorrent.Facades
             {
                 var totalSeconds = averageDownloadSpeedLongTerm == 0 ? 0 : (torrentManager.Torrent.Size - torrentManager.Monitor.DataBytesDownloaded) / averageDownloadSpeedLongTerm;
 
-                var seconds = Math.Floor(totalSeconds % 60.0);
-                var minutes = Math.Floor(totalSeconds / 60.0 % 60.0);
+                var minutes = Math.Ceiling(totalSeconds / 60.0 % 60.0);
                 var hours = Math.Floor(totalSeconds / 60.0 / 60.0 % 60.0);
                 var days = Math.Floor(totalSeconds / 60.0 / 60.0 / 60.0 % 24.0);
                 var months = Math.Floor(totalSeconds / 60.0 / 60.0 / 60.0 / 24.0 % 30.5);
@@ -64,7 +63,7 @@ namespace Tyrannotorrent.Facades
                 }
                 if (days == 0)
                 {
-                    timeLeft += string.Format("{0:00}", minutes) + "m ";
+                    timeLeft += string.Format("{0:00}", Math.Max(1, minutes)) + "m ";
                 }
 
                 if (timeLeft.Length > 0) timeLeft = timeLeft.Substring(0, timeLeft.Length - 1);
@@ -224,6 +223,7 @@ namespace Tyrannotorrent.Facades
 
         private async void StartUpdateLoop()
         {
+            var count = 0;
             while (true)
             {
                 await Task.Delay(100);
@@ -234,6 +234,13 @@ namespace Tyrannotorrent.Facades
                 while (lastDownloadSpeeds.Count > 1000 * 6)
                 {
                     lastDownloadSpeeds.RemoveLast();
+                }
+
+                count++;
+                if (count >= 100)
+                {
+                    count = 0;
+                    torrentManager.SaveFastResume();
                 }
 
                 Update();

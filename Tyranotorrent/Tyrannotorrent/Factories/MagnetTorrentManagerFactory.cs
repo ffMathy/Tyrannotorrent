@@ -7,6 +7,7 @@ using MonoTorrent.Client;
 using MonoTorrent;
 using System.IO;
 using MonoTorrent.Common;
+using Tyrannotorrent.Helpers;
 
 namespace Tyrannotorrent.Factories
 {
@@ -25,7 +26,7 @@ namespace Tyrannotorrent.Factories
 
             var sanitizedName = SanitizeFilePath(magnetLink.Name);
             var savePath = Path.Combine(Environment.CurrentDirectory, sanitizedName);
-            var torrentSavePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Downloads", sanitizedName + ".torrent");
+            var torrentSavePath = Path.Combine(StorageHelper.TorrentsPath, sanitizedName + ".torrent");
 
             var torrentManager = new TorrentManager(magnetLink, savePath, TorrentSettings, torrentSavePath);
             engine.Register(torrentManager);

@@ -15,6 +15,7 @@ using Tyrannotorrent.Facades;
 using System.Collections.Generic;
 using Tyrannotorrent.Factories;
 using System.Diagnostics;
+using Tyrannotorrent.Helpers;
 
 namespace Tyrannotorrent.ViewModels
 {
@@ -100,6 +101,8 @@ namespace Tyrannotorrent.ViewModels
 
             Downloads.Add(viewModel);
 
+            StartupHelper.SetStartNextTimeWithWindows(true);
+
             manager.Start();
         }
 
@@ -111,9 +114,14 @@ namespace Tyrannotorrent.ViewModels
                 File.Delete(torrentFilePath);
             }
 
+            var torrentDownloadPath = torrent.TorrentManager.SavePath;
+            Process.Start(torrentDownloadPath);
+
             Downloads.Remove(torrent);
             if(Downloads.Count == 0)
             {
+                StartupHelper.SetStartNextTimeWithWindows(false);
+
                 if (ShutDownPC)
                 {
 #pragma warning disable CS0642

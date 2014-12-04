@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace Tyrannotorrent.Helpers
 {
-    class StorageHelper
+    static class StorageHelper
     {
         public static string GetPath(params string[] chunks)
         {
@@ -29,6 +29,17 @@ namespace Tyrannotorrent.Helpers
             get
             {
                 return GetPath("Torrents");
+            }
+        }
+
+        public static string DownloadsPath
+        {
+            get
+            {
+                var downloadPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Downloads");
+                Directory.CreateDirectory(downloadPath);
+
+                return downloadPath;
             }
         }
     }

@@ -23,7 +23,8 @@ namespace Tyrannotorrent.Factories
 
             var torrent = Torrent.Load(torrentPath);
             var sanitizedName = SanitizeFilePath(torrent.Name);
-            var savePath = Path.Combine(Environment.CurrentDirectory, sanitizedName);
+
+            var savePath = Path.Combine(StorageHelper.DownloadsPath, sanitizedName);
             return new TorrentManager(torrent, savePath, TorrentSettings);
 
         }
