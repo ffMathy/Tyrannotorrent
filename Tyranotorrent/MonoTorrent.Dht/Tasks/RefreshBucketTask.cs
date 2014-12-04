@@ -9,8 +9,6 @@ namespace MonoTorrent.Dht
 {
     class RefreshBucketTask : Task
     {
-        private static readonly ILogger Logger = LogManager.GetLogger();
-
         private Bucket bucket;
         private DhtEngine engine;
         private FindNode message;
@@ -31,7 +29,7 @@ namespace MonoTorrent.Dht
                 return;
             }
 
-            Logger.Info("Choosing first from: {0}", bucket.Nodes.Count);
+            Console.WriteLine("Choosing first from: {0}", bucket.Nodes.Count);
             bucket.SortBySeen();
             QueryNode(bucket.Nodes[0]);
         }

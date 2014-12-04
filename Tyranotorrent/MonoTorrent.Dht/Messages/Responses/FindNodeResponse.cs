@@ -61,9 +61,7 @@ namespace MonoTorrent.Dht.Messages
         public override void Handle(DhtEngine engine, Node node)
         {
             base.Handle(engine, node);
-
-            if (Parameters.ContainsKey(NodesKey))
-                engine.Add(Node.FromCompactNode(Nodes.TextBytes));
+            engine.Add(Node.FromCompactNode(Nodes.TextBytes));
         }
     }
 }

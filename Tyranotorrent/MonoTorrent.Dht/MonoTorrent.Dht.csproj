@@ -53,9 +53,6 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="MonoTorrent">
-      <HintPath>..\packages\MonoTorrent.0.9.0\lib\net20\MonoTorrent.dll</HintPath>
-    </Reference>
     <Reference Include="System" />
   </ItemGroup>
   <ItemGroup>
@@ -66,7 +63,6 @@
     <Compile Include="EventArgs\SendMessageEventArgs.cs" />
     <Compile Include="EventArgs\TaskCompleteEventArgs.cs" />
     <Compile Include="Listeners\DhtListener.cs" />
-    <Compile Include="LogManager.cs" />
     <Compile Include="Message.cs" />
     <Compile Include="MessageException.cs" />
     <Compile Include="MessageFactory.cs" />
@@ -116,9 +112,6 @@
       <Install>false</Install>
     </BootstrapperPackage>
   </ItemGroup>
-  <ItemGroup>
-    <None Include="packages.config" />
-  </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
@@ -130,4 +123,10 @@
   <ProjectExtensions>
     <VisualStudio />
   </ProjectExtensions>
+  <ItemGroup>
+    <ProjectReference Include="..\MonoTorrent\MonoTorrent.csproj">
+      <Project>{411A9E0E-FDC6-4E25-828A-0C2CD1CD96F8}</Project>
+      <Name>MonoTorrent</Name>
+    </ProjectReference>
+  </ItemGroup>
 </Project>

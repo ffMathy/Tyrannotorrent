@@ -1,0 +1,41 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 14
+VisualStudioVersion = 14.0.22310.1
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tyrannotorrent", "Tyrannotorrent\Tyrannotorrent.csproj", "{586A536B-6890-4DD9-A442-1F85F6CF452D}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MonoTorrent.Dht", "MonoTorrent.Dht\MonoTorrent.Dht.csproj", "{7A2A7E73-FD43-4171-AA34-DA413D35459E}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MonoTorrent", "MonoTorrent\MonoTorrent.csproj", "{411A9E0E-FDC6-4E25-828A-0C2CD1CD96F8}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+		Stats|Any CPU = Stats|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{586A536B-6890-4DD9-A442-1F85F6CF452D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{586A536B-6890-4DD9-A442-1F85F6CF452D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{586A536B-6890-4DD9-A442-1F85F6CF452D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{586A536B-6890-4DD9-A442-1F85F6CF452D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{586A536B-6890-4DD9-A442-1F85F6CF452D}.Stats|Any CPU.ActiveCfg = Release|Any CPU
+		{586A536B-6890-4DD9-A442-1F85F6CF452D}.Stats|Any CPU.Build.0 = Release|Any CPU
+		{7A2A7E73-FD43-4171-AA34-DA413D35459E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7A2A7E73-FD43-4171-AA34-DA413D35459E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7A2A7E73-FD43-4171-AA34-DA413D35459E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7A2A7E73-FD43-4171-AA34-DA413D35459E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7A2A7E73-FD43-4171-AA34-DA413D35459E}.Stats|Any CPU.ActiveCfg = Release|Any CPU
+		{7A2A7E73-FD43-4171-AA34-DA413D35459E}.Stats|Any CPU.Build.0 = Release|Any CPU
+		{411A9E0E-FDC6-4E25-828A-0C2CD1CD96F8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{411A9E0E-FDC6-4E25-828A-0C2CD1CD96F8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{411A9E0E-FDC6-4E25-828A-0C2CD1CD96F8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{411A9E0E-FDC6-4E25-828A-0C2CD1CD96F8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{411A9E0E-FDC6-4E25-828A-0C2CD1CD96F8}.Stats|Any CPU.ActiveCfg = Stats|Any CPU
+		{411A9E0E-FDC6-4E25-828A-0C2CD1CD96F8}.Stats|Any CPU.Build.0 = Stats|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
