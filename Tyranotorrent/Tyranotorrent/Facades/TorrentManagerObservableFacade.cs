@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 using System.Windows.Threading;
 using MonoTorrent.Client.Tracker;
 
-namespace Tyranotorrent.MonoTorrent
+namespace Tyranotorrent.Facades
 {
     class TorrentManagerViewModelFacade : INotifyPropertyChanged, IDisposable
     {

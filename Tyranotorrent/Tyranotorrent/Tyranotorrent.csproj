@@ -58,7 +58,10 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
-    <Compile Include="MonoTorrent\TorrentManagerObservableFacade.cs" />
+    <Compile Include="Factories\MagnetTorrentManagerFactory.cs" />
+    <Compile Include="Factories\TorrentFileTorrentManagerFactory.cs" />
+    <Compile Include="Factories\TorrentManagerFactory.cs" />
+    <Compile Include="Facades\TorrentManagerObservableFacade.cs" />
     <Compile Include="ViewModels\MainWindowViewModel.cs" />
     <Page Include="MainWindow.xaml">
       <Generator>MSBuild:Compile</Generator>

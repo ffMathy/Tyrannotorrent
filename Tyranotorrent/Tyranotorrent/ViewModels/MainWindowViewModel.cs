@@ -11,8 +11,9 @@ using System.Net;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
-using Tyranotorrent.MonoTorrent;
+using Tyranotorrent.Facades;
 using System.Collections.Generic;
+using Tyranotorrent.Factories;
 
 namespace Tyranotorrent.ViewModels
 {
@@ -21,7 +22,6 @@ namespace Tyranotorrent.ViewModels
 
         public ObservableCollection<TorrentManagerViewModelFacade> Downloads { get; private set; }
 
-        private readonly TorrentSettings torrentSettings;
         private readonly ClientEngine clientEngine;
 
         private MainWindowViewModel()
@@ -34,9 +34,6 @@ namespace Tyranotorrent.ViewModels
             var engineSettings = new EngineSettings(Environment.CurrentDirectory, port);
             engineSettings.PreferEncryption = false;
             engineSettings.AllowedEncryption = EncryptionTypes.All;
-
-            torrentSettings = new TorrentSettings(1, 50, 0, 1);
-            torrentSettings.InitialSeedingEnabled = false;
 
             clientEngine = new ClientEngine(engineSettings);
             clientEngine.CriticalException += ClientEngine_CriticalException;
@@ -73,32 +70,27 @@ namespace Tyranotorrent.ViewModels
         /// <summary>
         /// Queues a Torrent or Magnet link for download.
         /// </summary>
-        /// <param name="torrentPath">The Magnet link or Torrent file location.</param>
-        public void QueueTorrent(string torrentPath)
+        /// <param name="input">The Magnet link or Torrent file location.</param>
+        public void QueueTorrent(string input)
         {
-            TorrentManager manager;
+            TorrentManagerFactory factory;
 
-            Torrent torrent;
-            if (Torrent.TryLoad(torrentPath, out torrent))
+            if (input.StartsWith("magnet:"))
             {
-                var sanitizedName = SanitizeFilePath(torrent.Name);
-                var savePath = Path.Combine(Environment.CurrentDirectory, sanitizedName);
-                manager = new TorrentManager(torrent, savePath, torrentSettings);
-            } else if(torrentPath.StartsWith("magnet:"))
-            {
+                factory = new MagnetTorrentManagerFactory();
                 //TODO: magnet links are not working. at least they don't seem to. it's as if it doesn't get the proper announce list. also, it doesn't seem to save the torrent.
-
-                var magnetLink = new MagnetLink(torrentPath);
-                var sanitizedName = SanitizeFilePath(magnetLink.Name);
-                var savePath = Path.Combine(Environment.CurrentDirectory, sanitizedName);
-                var torrentSavePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Downloads", sanitizedName + ".torrent");
-                manager = new TorrentManager(magnetLink, savePath, torrentSettings, torrentSavePath);
-            } else
+            }
+            else if (File.Exists(input) && string.Equals(Path.GetExtension(input), ".torrent", StringComparison.OrdinalIgnoreCase))
+            {
+                factory = new TorrentFileTorrentManagerFactory();
+            }
+            else
             {
                 MessageBox.Show("Unrecognized torrent format.", "Sorry about that", MessageBoxButton.OK, MessageBoxImage.Exclamation);
                 return;
             }
 
+            var manager = factory.CreateTorrent(input);
             clientEngine.Register(manager);
 
             var viewModel = new TorrentManagerViewModelFacade(manager);
@@ -107,16 +99,6 @@ namespace Tyranotorrent.ViewModels
             Downloads.Add(viewModel);
 
             manager.Start();
-        }
-
-        private string SanitizeFilePath(string input)
-        {
-            foreach (var illegalCharacter in Path.GetInvalidPathChars().Union(Path.GetInvalidFileNameChars()))
-            {
-                input = input.Replace(illegalCharacter, '_');
-            }
-            while (input.Contains("__")) input = input.Replace("__", "_");
-            return input;
         }
 
         private void ViewModel_TorrentDownloaded(TorrentManagerViewModelFacade torrent)
