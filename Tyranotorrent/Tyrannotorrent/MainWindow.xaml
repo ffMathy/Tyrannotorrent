@@ -12,14 +12,19 @@
             <RowDefinition Height="Auto" />
             <RowDefinition />
         </Grid.RowDefinitions>
-        <Label FontSize="20" FontWeight="ExtraLight" Margin="10" Foreground="#39f" VerticalAlignment="Top">DOWNLOADS</Label>
-        <ItemsControl Grid.Row="1" ItemsSource="{Binding Downloads, Mode=OneWay}">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="Auto" />
+            <ColumnDefinition />
+        </Grid.ColumnDefinitions>
+        <Label Padding="0" FontSize="20" FontWeight="ExtraLight" Margin="10" Foreground="#39f" VerticalAlignment="Top">DOWNLOADS</Label>
+        <CheckBox Opacity="0.5" IsChecked="{Binding ShutDownPC, Mode=TwoWay}" Content="Shut down PC when all downloads are finished" Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="10" />
+        <ItemsControl Grid.ColumnSpan="2" Grid.Row="1" ItemsSource="{Binding Downloads, Mode=OneWay}">
             <ItemsControl.ItemTemplate>
                 <DataTemplate>
                     <Grid SnapsToDevicePixels="True" Margin="0,0,0,5">
                         <Rectangle SnapsToDevicePixels="True" Margin="-1,0" Stroke="#ddd" Fill="#f9f9f9" />
                         <ProgressBar Opacity="0.5" Height="5" BorderBrush="Transparent" BorderThickness="0" HorizontalAlignment="Stretch" VerticalAlignment="Bottom" Grid.ColumnSpan="3" Grid.Column="0" Value="{Binding Progress, Mode=OneWay}" Minimum="0" Maximum="100" Background="#10333333" Foreground="#333" />
-                        <Grid Margin="20,5,20,10">
+                        <Grid Margin="10,5,10,10">
                             <Grid.RowDefinitions>
                                 <RowDefinition/>
                             </Grid.RowDefinitions>
@@ -29,8 +34,8 @@
                                 <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
                             <TextBlock VerticalAlignment="Center" TextTrimming="CharacterEllipsis" TextWrapping="Wrap" Margin="3" FontWeight="ExtraLight" Foreground="#333" FontSize="14" Text="{Binding Name, Mode=OneWay}" />
-                            <TextBlock Foreground="#333" VerticalAlignment="Center" Grid.Column="1" Margin="3" Text="{Binding DownloadSpeed, Mode=OneWay}" HorizontalAlignment="Center" />
-                            <TextBlock Foreground="#333" VerticalAlignment="Center" Grid.Column="2" Margin="3" Text="{Binding State, Mode=OneWay}" HorizontalAlignment="Center" />
+                            <TextBlock Foreground="#CC000000" VerticalAlignment="Center" Grid.Column="1" Margin="3" Text="{Binding DownloadSpeed, Mode=OneWay}" HorizontalAlignment="Center" />
+                            <TextBlock Foreground="#CC000000" VerticalAlignment="Center" Grid.Column="2" Margin="3" Text="{Binding State, Mode=OneWay}" HorizontalAlignment="Center" />
                         </Grid>
                     </Grid>
                 </DataTemplate>

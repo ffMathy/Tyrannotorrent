@@ -59,6 +59,7 @@
     <Compile Include="Factories\TorrentFileTorrentManagerFactory.cs" />
     <Compile Include="Factories\TorrentManagerFactory.cs" />
     <Compile Include="Facades\TorrentManagerObservableFacade.cs" />
+    <Compile Include="Helpers\StorageHelper.cs" />
     <Compile Include="ViewModels\MainWindowViewModel.cs" />
     <Page Include="MainWindow.xaml">
       <Generator>MSBuild:Compile</Generator>

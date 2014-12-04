@@ -14,6 +14,7 @@ using System.Windows;
 using Tyrannotorrent.Facades;
 using System.Collections.Generic;
 using Tyrannotorrent.Factories;
+using System.Diagnostics;
 
 namespace Tyrannotorrent.ViewModels
 {
@@ -21,6 +22,8 @@ namespace Tyrannotorrent.ViewModels
     {
 
         public ObservableCollection<TorrentManagerViewModelFacade> Downloads { get; private set; }
+
+        public bool ShutDownPC { get; set; }
 
         private readonly ClientEngine clientEngine;
 
@@ -109,6 +112,19 @@ namespace Tyrannotorrent.ViewModels
             }
 
             Downloads.Remove(torrent);
+            if(Downloads.Count == 0)
+            {
+                if (ShutDownPC)
+                {
+#pragma warning disable CS0642
+                    using (Process.Start("shutdown", "/s /t 0")) ;
+#pragma warning restore CS0642
+                } else
+                {
+                    Application.Current.Shutdown();
+                }
+            }
+
             torrent.Dispose();
         }
     }
