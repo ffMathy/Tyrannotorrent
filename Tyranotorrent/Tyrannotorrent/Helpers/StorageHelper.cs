@@ -13,10 +13,11 @@ namespace Tyrannotorrent.Helpers
         {
             var applicationDataPath = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
 
-            var newChunkArray = new string[chunks.Length + 1];
+            var newChunkArray = new string[chunks.Length + 2];
             newChunkArray[0] = applicationDataPath;
+            newChunkArray[1] = "Tyrannotorrent";
 
-            Array.Copy(chunks, 0, newChunkArray, 1, chunks.Length);
+            Array.Copy(chunks, 0, newChunkArray, 2, chunks.Length);
 
             var path = Path.Combine(newChunkArray);
             Directory.CreateDirectory(path);

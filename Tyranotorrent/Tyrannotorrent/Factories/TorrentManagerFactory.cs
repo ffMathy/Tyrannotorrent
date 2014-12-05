@@ -15,8 +15,7 @@
 
         protected TorrentManagerFactory()
         {
-            var torrentSettings = new TorrentSettings(5, 50, 0, 1);
-            torrentSettings.InitialSeedingEnabled = false;
+            var torrentSettings = new TorrentSettings(5, 50, 0, 50);
 
             this.TorrentSettings = torrentSettings;
         }

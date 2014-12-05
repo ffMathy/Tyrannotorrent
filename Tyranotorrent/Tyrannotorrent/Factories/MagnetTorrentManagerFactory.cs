@@ -33,10 +33,14 @@ namespace Tyrannotorrent.Factories
 
             torrentManager.Start();
 
-            engine.DhtEngine.GetPeers(magnetLink.InfoHash);
+            var dht = engine.DhtEngine;
+            dht.GetPeers(magnetLink.InfoHash);
 
-            while (torrentManager.State == TorrentState.Stopped) await Task.Delay(100);
-            while (torrentManager.State == TorrentState.Metadata) await Task.Delay(100);
+            while (torrentManager.State == TorrentState.Stopped) await Task.Delay(10);
+            while (torrentManager.State == TorrentState.Metadata) await Task.Delay(10);
+
+            torrentManager.Stop();
+            torrentManager.Dispose();
 
             var torrentFactory = new TorrentFileTorrentManagerFactory();
             return await torrentFactory.CreateTorrent(torrentSavePath);

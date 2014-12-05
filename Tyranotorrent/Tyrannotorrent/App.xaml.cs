@@ -9,6 +9,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Threading;
 using Tyrannotorrent.Helpers;
 using Tyrannotorrent.ViewModels;
 
@@ -21,6 +22,9 @@ namespace Tyrannotorrent
     {
         private void Application_Startup(object sender, StartupEventArgs e)
         {
+
+            AppDomain.CurrentDomain.UnhandledException += CurrentDomain_UnhandledException;
+            Current.DispatcherUnhandledException += Current_DispatcherUnhandledException;
 
             //TODO: instead of killing existing instances, it should transfer the download to the new instance.
             using (var currentProcess = Process.GetCurrentProcess())
@@ -187,7 +191,7 @@ namespace Tyrannotorrent
             var arguments = e.Args;
             if(arguments.Length == 1)
             {
-                var torrentFile = arguments[1];
+                var torrentFile = arguments[0];
                 viewModel.QueueTorrent(torrentFile);
             } else if(arguments.Length == 2 && arguments[0] == "AUTO" && arguments[1] == "START")
             {
@@ -195,6 +199,24 @@ namespace Tyrannotorrent
             }
 
             window.Show();
+        }
+
+        private void Current_DispatcherUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)
+        {
+            DisplayException(e.Exception);
+            e.Handled = true;
+        }
+
+        private void DisplayException(Exception exception)
+        {
+            if (exception == null) return;
+
+            MessageBox.Show("An error occured in Tyrannotorrent: " + exception, "Woops, an error occured!", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+
+        private void CurrentDomain_UnhandledException(object sender, UnhandledExceptionEventArgs e)
+        {
+            DisplayException(e.ExceptionObject as Exception);
         }
     }
 }
