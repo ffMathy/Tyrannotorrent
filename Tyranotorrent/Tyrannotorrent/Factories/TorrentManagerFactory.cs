@@ -15,7 +15,9 @@
 
         protected TorrentManagerFactory()
         {
-            var torrentSettings = new TorrentSettings(5, 50, 0, 50);
+            var torrentSettings = new TorrentSettings(5, int.MaxValue, 0, 25);
+            torrentSettings.EnablePeerExchange = true;
+            torrentSettings.UseDht = true;
 
             this.TorrentSettings = torrentSettings;
         }

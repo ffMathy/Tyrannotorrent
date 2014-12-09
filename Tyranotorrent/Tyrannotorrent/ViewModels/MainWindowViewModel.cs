@@ -33,7 +33,9 @@ namespace Tyrannotorrent.ViewModels
             Downloads = new ObservableCollection<TorrentManagerViewModelFacade>();
 
             var random = new Random((int)DateTime.UtcNow.Ticks);
-            var port = 25555 + random.Next(-100, 100);
+
+            const int portDiversity = 10000;
+            var port = 25555 + random.Next(-(portDiversity / 2), portDiversity / 2);
 
             var engineSettings = new EngineSettings(Environment.CurrentDirectory, port);
             engineSettings.PreferEncryption = false;
@@ -44,13 +46,44 @@ namespace Tyrannotorrent.ViewModels
 
             clientEngine.ChangeListenEndpoint(new IPEndPoint(IPAddress.Any, port));
 
-            var listener = new DhtListener(new IPEndPoint(IPAddress.Any, port));
+            var listener = new DhtListener(new IPEndPoint(IPAddress.Any, port + 1));
             var nodeEngine = new DhtEngine(listener);
 
             clientEngine.RegisterDht(nodeEngine);
 
+            byte[] nodes = null;
+
+            var nodesFilePath = Path.Combine(StorageHelper.TorrentsPath, "Nodes");
+            if (File.Exists(nodesFilePath))
+            {
+                nodes = File.ReadAllBytes(nodesFilePath);
+            }
+
+            nodeEngine.PeersFound += NodeEngine_PeersFound;
+            nodeEngine.StateChanged += NodeEngine_StateChanged;
+
             listener.Start();
-            nodeEngine.Start();
+            nodeEngine.Start(nodes);
+        }
+
+        private void NodeEngine_StateChanged(object sender, EventArgs e)
+        {
+            var engine = (DhtEngine)sender;
+
+            Debug.WriteLine("DHT state changed to: " + engine.State);
+
+            var nodeData = engine.SaveNodes();
+            File.WriteAllBytes(Path.Combine(StorageHelper.TorrentsPath, "Nodes"), nodeData);
+        }
+
+        private void NodeEngine_PeersFound(object sender, PeersFoundEventArgs e)
+        {
+            var engine = (DhtEngine)sender;
+
+            Debug.WriteLine("Found peers.");
+
+            var nodeData = engine.SaveNodes();
+            File.WriteAllBytes(Path.Combine(StorageHelper.TorrentsPath, "Nodes"), nodeData);
         }
 
         private void ClientEngine_CriticalException(object sender, CriticalExceptionEventArgs e)

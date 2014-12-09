@@ -10,7 +10,7 @@ namespace MonoTorrent.Dht
     {
         private static int current = 0;
 
-        private static Object lock_object = new Object();
+        private static object lock_object = new object();
 
         public static BEncodedString NextId()
         {
