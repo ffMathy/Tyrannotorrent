@@ -24,8 +24,8 @@ namespace Tyrannotorrent.Factories
         {
             var magnetLink = new MagnetLink(input);
 
-            var sanitizedName = SanitizeFilePath(magnetLink.Name);
-            var savePath = Path.Combine(Environment.CurrentDirectory, sanitizedName);
+            var sanitizedName = SanitizeFilePath(magnetLink.Name ?? "Magnet link");
+            var savePath = Path.Combine(StorageHelper.DownloadsPath, sanitizedName);
             var torrentSavePath = Path.Combine(StorageHelper.TorrentsPath, sanitizedName + ".torrent");
 
             var torrentManager = new TorrentManager(magnetLink, savePath, TorrentSettings, torrentSavePath);
