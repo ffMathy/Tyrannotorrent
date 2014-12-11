@@ -35,7 +35,8 @@ namespace Tyrannotorrent
             }
 
             //TODO: this registry stuff is really ugly. replace parts of it with a delegate method or something to make it shorter.
-            using (var classesKey = Registry.ClassesRoot)
+            using (var softwareKey = Registry.CurrentUser.OpenSubKey("Software", true))
+            using (var classesKey = softwareKey.OpenSubKey("Classes", true))
             {
                 var magnetKey = classesKey.OpenSubKey("Magnet", true);
                 if (magnetKey == null)
