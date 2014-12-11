@@ -28,7 +28,7 @@ namespace Tyrannotorrent.Helpers
                     using (var currentProcess = Process.GetCurrentProcess())
                     {
                         var executableName = currentProcess.ProcessName + ".exe";
-                        var executablePath = Path.Combine(Environment.CurrentDirectory, executableName);
+                        var executablePath = Path.Combine(PathHelper.CurrentExecutablePath);
                         key.SetValue("Tyrannotorrent", string.Format("\"{0}\" AUTO START", executablePath));
                     }
                 }

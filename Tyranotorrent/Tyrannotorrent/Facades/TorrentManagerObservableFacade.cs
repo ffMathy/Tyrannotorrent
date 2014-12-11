@@ -1,21 +1,20 @@
-﻿using MonoTorrent.Client;
-using MonoTorrent.Common;
-using System;
+﻿using System;
 using System.Linq;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Diagnostics;
-using System.IO;
 using System.Threading.Tasks;
 using System.Windows.Threading;
-using MonoTorrent.Client.Tracker;
+using Ragnar;
+using System.Windows;
+using System.IO;
+using Tyrannotorrent.Helpers;
 
 namespace Tyrannotorrent.Facades
 {
-    class TorrentManagerViewModelFacade : INotifyPropertyChanged, IDisposable
+    class TorrentHandleViewModelFacade : INotifyPropertyChanged, IDisposable
     {
 
-        public delegate void TorrentDownloadedEvent(TorrentManagerViewModelFacade torrent);
+        public delegate void TorrentDownloadedEvent(TorrentHandleViewModelFacade torrent);
         public event TorrentDownloadedEvent TorrentDownloaded;
 
         private LinkedList<int> lastDownloadSpeeds;
@@ -23,20 +22,16 @@ namespace Tyrannotorrent.Facades
         private int averageDownloadSpeedShortTerm;
         private int averageDownloadSpeedLongTerm;
 
-        private TorrentManager torrentManager;
+        private TorrentHandle torrentHandle;
+        private TorrentStatus torrentStatus;
 
         private Dispatcher mainThreadDispatcher;
 
-        public TorrentManager TorrentManager
-        {
-            get { return torrentManager; }
-        }
-
-        public string State
+        public string TimeLeft
         {
             get
             {
-                var totalSeconds = averageDownloadSpeedLongTerm == 0 ? 0 : (torrentManager.Torrent.Size - torrentManager.Monitor.DataBytesDownloaded) / averageDownloadSpeedLongTerm;
+                var totalSeconds = averageDownloadSpeedLongTerm == 0 ? 0 : (torrentHandle.TorrentFile.TotalSize - torrentStatus.TotalDownload) / averageDownloadSpeedLongTerm;
 
                 var minutes = Math.Ceiling(totalSeconds / 60.0 % 60.0);
                 var hours = Math.Floor(totalSeconds / 60.0 / 60.0 % 60.0);
@@ -66,9 +61,15 @@ namespace Tyrannotorrent.Facades
                     timeLeft += string.Format("{0:00}", Math.Max(1, minutes)) + "m ";
                 }
 
-                if (timeLeft.Length > 0) timeLeft = timeLeft.Substring(0, timeLeft.Length - 1);
+                return timeLeft;
+            }
+        }
 
-                return torrentManager.State + "\n" + timeLeft;
+        public string TorrentFilePath
+        {
+            get
+            {
+                return Path.Combine(PathHelper.TorrentsPath, torrentHandle.TorrentFile.Name + ".torrent");
             }
         }
 
@@ -82,7 +83,7 @@ namespace Tyrannotorrent.Facades
                 var byteUnit = "B/s";
                 var bitUnit = "b/s";
 
-                if(bitDownloadSpeed > 1024)
+                if (bitDownloadSpeed > 1024)
                 {
                     bitUnit = "Kb/s";
                     bitDownloadSpeed /= 1024.0;
@@ -145,7 +146,7 @@ namespace Tyrannotorrent.Facades
         {
             get
             {
-                return torrentManager.Progress;
+                return torrentStatus == null ? 0 : torrentStatus.Progress * 100.0;
             }
         }
 
@@ -153,70 +154,28 @@ namespace Tyrannotorrent.Facades
         {
             get
             {
-                var torrent = torrentManager.Torrent;
-                if (torrent == null)
-                {
-                    return Path.GetFileName(torrentManager.SavePath);
-                }
-                else
-                {
-                    return torrent.Name;
-                }
+                return torrentHandle.TorrentFile == null ? "Loading ..." : torrentHandle.TorrentFile.Name;
             }
         }
 
-        public TorrentManagerViewModelFacade(TorrentManager torrentManager)
+        public string TorrentSavePath
+        {
+            get
+            {
+                return Path.Combine(PathHelper.DownloadsPath, torrentHandle.TorrentFile.Name);
+            }
+        }
+
+        public TorrentHandle TorrentHandle
+        {
+            get { return torrentHandle; }
+        }
+
+        public TorrentHandleViewModelFacade(TorrentHandle torrentManager)
         {
             this.lastDownloadSpeeds = new LinkedList<int>();
             this.mainThreadDispatcher = Dispatcher.CurrentDispatcher;
-            this.torrentManager = torrentManager;
-
-            torrentManager.TorrentStateChanged += Manager_TorrentStateChanged;
-
-            torrentManager.PieceHashed += delegate (object o, PieceHashedEventArgs e)
-            {
-                var pieceIndex = e.PieceIndex;
-                var totalPieces = e.TorrentManager.Torrent.Pieces.Count;
-                var hashProgress = (double)pieceIndex / totalPieces * 100.0;
-                if (e.HashPassed)
-                {
-                    Debug.WriteLine("Piece {0} of {1} is complete", pieceIndex, totalPieces);
-                }
-                else
-                {
-                    Debug.WriteLine("Piece {0} of {1} is corrupt or incomplete ", pieceIndex, totalPieces);
-                }
-
-                Debug.WriteLine("Total hashing progress is: {0}%", hashProgress);
-
-                Debug.WriteLine("{0}% of the torrent download is complete", Progress);
-                NotifyPropertyChanged("Progress");
-
-                if (Progress == 100)
-                {
-                    //we're done! no more seeding please.
-                    torrentManager.Stop();
-
-                    mainThreadDispatcher.Invoke(delegate
-                    {
-                        if (TorrentDownloaded != null)
-                        {
-                            TorrentDownloaded(this);
-                        }
-                    });
-                }
-            };
-
-            foreach (var tier in torrentManager.TrackerManager)
-            {
-                foreach (var tracker in tier.GetTrackers())
-                {
-                    tracker.AnnounceComplete += delegate (object sender, AnnounceResponseEventArgs e)
-                    {
-                        Debug.WriteLine(string.Format("Announce {0}: {1}", e.Successful, e.Tracker.ToString()));
-                    };
-                }
-            }
+            this.torrentHandle = torrentManager;
 
             StartUpdateLoop();
         }
@@ -228,7 +187,10 @@ namespace Tyrannotorrent.Facades
             {
                 await Task.Delay(100);
 
-                var currentSpeed = torrentManager.Monitor.DownloadSpeed;
+                var oldTorrentStatus = torrentStatus;
+                torrentStatus = torrentHandle.QueryStatus();
+
+                var currentSpeed = torrentStatus.DownloadRate;
                 lastDownloadSpeeds.AddFirst(currentSpeed);
 
                 while (lastDownloadSpeeds.Count > 1000 * 6)
@@ -240,25 +202,30 @@ namespace Tyrannotorrent.Facades
                 if (count >= 100)
                 {
                     count = 0;
-                    torrentManager.SaveFastResume();
                 }
 
-                Update();
-            }
-        }
+                averageDownloadSpeedShortTerm = (int)(lastDownloadSpeeds.Count > 0 ? lastDownloadSpeeds.Take(10).Average() : 0);
+                averageDownloadSpeedLongTerm = (int)(lastDownloadSpeeds.Count > 0 ? lastDownloadSpeeds.Average() : 0);
 
-        private void Manager_TorrentStateChanged(object sender, TorrentStateChangedEventArgs e)
-        {
-            Debug.WriteLine(Name + " changed state to from " + e.OldState + " to " + e.NewState);
-            NotifyPropertyChanged("State");
-            if (e.NewState == TorrentState.Metadata)
-            {
+                NotifyPropertyChanged("DownloadSpeed");
+                NotifyPropertyChanged("Progress");
+                NotifyPropertyChanged("State");
                 NotifyPropertyChanged("Name");
-            }
-            else if (e.NewState == TorrentState.Stopped)
-            {
-                var engine = torrentManager.Engine;
-                engine.Unregister(torrentManager);
+
+                //are we done?
+                if (Progress == 100)
+                {
+
+                    mainThreadDispatcher.Invoke(delegate
+                    {
+                        if (TorrentDownloaded != null)
+                        {
+                            TorrentDownloaded(this);
+                        }
+                    });
+
+                    break;
+                }
             }
         }
 
@@ -273,15 +240,6 @@ namespace Tyrannotorrent.Facades
             });
         }
 
-        private void Update()
-        {
-            averageDownloadSpeedShortTerm = (int)(lastDownloadSpeeds.Count > 0 ? lastDownloadSpeeds.Take(10).Average() : 0);
-            averageDownloadSpeedLongTerm = (int)(lastDownloadSpeeds.Count > 0 ? lastDownloadSpeeds.Average() : 0);
-
-            NotifyPropertyChanged("DownloadSpeed");
-            NotifyPropertyChanged("State");
-        }
-
         public event PropertyChangedEventHandler PropertyChanged;
 
         #region IDisposable Support
@@ -291,9 +249,15 @@ namespace Tyrannotorrent.Facades
         {
             if (!disposedValue)
             {
+                //save resume data if needed.
+                if (torrentHandle.NeedSaveResumeData())
+                {
+                    torrentHandle.SaveResumeData();
+                }
+
                 if (disposing)
                 {
-                    torrentManager.Dispose();
+                    torrentHandle.Dispose();
                 }
 
                 disposedValue = true;

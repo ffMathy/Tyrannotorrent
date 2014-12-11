@@ -28,15 +28,14 @@ namespace Tyrannotorrent
                 {
                     if(process.Id != currentProcess.Id)
                     {
-                        process.Kill();
+                        process.CloseMainWindow();
                         Thread.Sleep(1000);
                     }
                 }
             }
 
             //TODO: this registry stuff is really ugly. replace parts of it with a delegate method or something to make it shorter.
-            using (var softwareKey = Registry.CurrentUser.OpenSubKey("Software", true))
-            using (var classesKey = softwareKey.OpenSubKey("Classes", true))
+            using (var classesKey = Registry.ClassesRoot)
             {
                 var magnetKey = classesKey.OpenSubKey("Magnet", true);
                 if (magnetKey == null)
@@ -78,7 +77,7 @@ namespace Tyrannotorrent
                             using (var currentProcess = Process.GetCurrentProcess())
                             {
                                 var executableName = currentProcess.ProcessName + ".exe";
-                                var executablePath = Path.Combine(Environment.CurrentDirectory, executableName);
+                                var executablePath = Path.Combine(PathHelper.CurrentExecutablePath);
                                 commandKey.SetValue(string.Empty, string.Format("\"{0}\" \"%1\"", executablePath));
                             }
                         }
@@ -145,7 +144,7 @@ namespace Tyrannotorrent
                             using (var currentProcess = Process.GetCurrentProcess())
                             {
                                 var executableName = currentProcess.ProcessName + ".exe";
-                                var executablePath = Path.Combine(Environment.CurrentDirectory, executableName);
+                                var executablePath = Path.Combine(PathHelper.CurrentExecutablePath);
                                 commandKey.SetValue(string.Empty, string.Format("\"{0}\" \"%1\"", executablePath));
                             }
                         }
@@ -156,7 +155,7 @@ namespace Tyrannotorrent
             var viewModel = MainWindowViewModel.Instance;
 
             //resume all torrents.
-            var path = StorageHelper.TorrentsPath;
+            var path = PathHelper.TorrentsPath;
             foreach (var file in Directory.GetFiles(path, "*.torrent"))
             {
                 viewModel.QueueTorrent(file);
@@ -165,6 +164,7 @@ namespace Tyrannotorrent
             //debugging mode? then load some sample data for testing.
             if (Debugger.IsAttached)
             {
+
                 var desktopDirectory = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
 
                 //add torrents from desktop.

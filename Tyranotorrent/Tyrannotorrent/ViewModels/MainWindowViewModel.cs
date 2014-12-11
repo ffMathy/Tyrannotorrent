@@ -1,94 +1,71 @@
-﻿using MonoTorrent;
-using MonoTorrent.Client;
-using MonoTorrent.Client.Encryption;
-using MonoTorrent.Common;
-using MonoTorrent.Dht;
-using MonoTorrent.Dht.Listeners;
-using System;
+﻿using System;
 using System.Collections.ObjectModel;
 using System.IO;
-using System.Net;
-using System.Linq;
-using System.Threading.Tasks;
 using System.Windows;
 using Tyrannotorrent.Facades;
-using System.Collections.Generic;
 using Tyrannotorrent.Factories;
 using System.Diagnostics;
 using Tyrannotorrent.Helpers;
+using Ragnar;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace Tyrannotorrent.ViewModels
 {
-    class MainWindowViewModel
+    class MainWindowViewModel : IDisposable
     {
 
-        public ObservableCollection<TorrentManagerViewModelFacade> Downloads { get; private set; }
+        public ObservableCollection<TorrentHandleViewModelFacade> Downloads { get; private set; }
 
         public bool ShutDownPC { get; set; }
 
-        private readonly ClientEngine clientEngine;
+        private readonly Session torrentSession;
 
         private MainWindowViewModel()
         {
-            Downloads = new ObservableCollection<TorrentManagerViewModelFacade>();
+            Downloads = new ObservableCollection<TorrentHandleViewModelFacade>();
 
             var random = new Random((int)DateTime.UtcNow.Ticks);
 
-            const int portDiversity = 10000;
-            var port = 25555 + random.Next(-(portDiversity / 2), portDiversity / 2);
+            torrentSession = new Session();
 
-            var engineSettings = new EngineSettings(Environment.CurrentDirectory, port);
-            engineSettings.PreferEncryption = false;
-            engineSettings.AllowedEncryption = EncryptionTypes.All;
+            Load();
 
-            clientEngine = new ClientEngine(engineSettings);
-            clientEngine.CriticalException += ClientEngine_CriticalException;
+        }
 
-            clientEngine.ChangeListenEndpoint(new IPEndPoint(IPAddress.Any, port));
+        private async void Load()
+        {
 
-            var listener = new DhtListener(new IPEndPoint(IPAddress.Any, port + 1));
-            var nodeEngine = new DhtEngine(listener);
-
-            clientEngine.RegisterDht(nodeEngine);
-
-            byte[] nodes = null;
-
-            var nodesFilePath = Path.Combine(StorageHelper.TorrentsPath, "Nodes");
+            var nodesFilePath = Path.Combine(PathHelper.TorrentsPath, "SessionState");
             if (File.Exists(nodesFilePath))
             {
-                nodes = File.ReadAllBytes(nodesFilePath);
+                var sessionState = File.ReadAllBytes(nodesFilePath);
+                torrentSession.LoadState(sessionState);
             }
 
-            nodeEngine.PeersFound += NodeEngine_PeersFound;
-            nodeEngine.StateChanged += NodeEngine_StateChanged;
+            const int portDiversity = 100;
+            const int port = 25555;
 
-            listener.Start();
-            nodeEngine.Start(nodes);
-        }
+            var listening = false;
+            while (!listening)
+            {
+                try
+                {
+                    torrentSession.ListenOn(port - portDiversity / 2, port + portDiversity / 2);
+                    listening = true;
+                }
+                catch
+                {
+                    //wait for firewall warning to disappear asynchronously.
+                    await Task.Delay(1000);
+                }
+            }
 
-        private void NodeEngine_StateChanged(object sender, EventArgs e)
-        {
-            var engine = (DhtEngine)sender;
-
-            Debug.WriteLine("DHT state changed to: " + engine.State);
-
-            var nodeData = engine.SaveNodes();
-            File.WriteAllBytes(Path.Combine(StorageHelper.TorrentsPath, "Nodes"), nodeData);
-        }
-
-        private void NodeEngine_PeersFound(object sender, PeersFoundEventArgs e)
-        {
-            var engine = (DhtEngine)sender;
-
-            Debug.WriteLine("Found peers.");
-
-            var nodeData = engine.SaveNodes();
-            File.WriteAllBytes(Path.Combine(StorageHelper.TorrentsPath, "Nodes"), nodeData);
-        }
-
-        private void ClientEngine_CriticalException(object sender, CriticalExceptionEventArgs e)
-        {
-            MessageBox.Show("Woops. A critical error occured." + Environment.NewLine + Environment.NewLine + e.Exception, "Woops!", MessageBoxButton.OK, MessageBoxImage.Error);
+            //let's do some funky routing.
+            torrentSession.StartNatPmp();
+            torrentSession.StartUpnp();
+            torrentSession.StartDht();
+            torrentSession.StartLsd();
         }
 
         private static MainWindowViewModel instance;
@@ -114,7 +91,7 @@ namespace Tyrannotorrent.ViewModels
 
             if (input.StartsWith("magnet:"))
             {
-                factory = new MagnetTorrentManagerFactory(clientEngine);
+                factory = new MagnetTorrentManagerFactory();
             }
             else if (File.Exists(input) && string.Equals(Path.GetExtension(input), ".torrent", StringComparison.OrdinalIgnoreCase))
             {
@@ -126,32 +103,31 @@ namespace Tyrannotorrent.ViewModels
                 return;
             }
 
-            var manager = await factory.CreateTorrent(input);
-            clientEngine.Register(manager);
+            var torrentHandle = await factory.CreateTorrent(torrentSession, input);
 
-            var viewModel = new TorrentManagerViewModelFacade(manager);
+            var viewModel = new TorrentHandleViewModelFacade(torrentHandle);
             viewModel.TorrentDownloaded += ViewModel_TorrentDownloaded;
 
             Downloads.Add(viewModel);
 
             StartupHelper.SetStartNextTimeWithWindows(true);
-
-            manager.Start();
         }
 
-        private void ViewModel_TorrentDownloaded(TorrentManagerViewModelFacade torrent)
+        private void ViewModel_TorrentDownloaded(TorrentHandleViewModelFacade torrent)
         {
-            var torrentFilePath = torrent.TorrentManager.Torrent.TorrentPath;
+            var torrentFilePath = torrent.TorrentFilePath;
             if (File.Exists(torrentFilePath))
             {
                 File.Delete(torrentFilePath);
             }
 
-            var torrentDownloadPath = torrent.TorrentManager.SavePath;
+            var torrentDownloadPath = torrent.TorrentSavePath;
             Process.Start(torrentDownloadPath);
 
+            torrentSession.RemoveTorrent(torrent.TorrentHandle);
             Downloads.Remove(torrent);
-            if(Downloads.Count == 0)
+
+            if (Downloads.Count == 0)
             {
                 StartupHelper.SetStartNextTimeWithWindows(false);
 
@@ -160,13 +136,47 @@ namespace Tyrannotorrent.ViewModels
 #pragma warning disable CS0642
                     using (Process.Start("shutdown", "/s /t 0")) ;
 #pragma warning restore CS0642
-                } else
+                }
+                else
                 {
                     Application.Current.Shutdown();
                 }
             }
 
-            torrent.Dispose();
         }
+
+        #region IDisposable Support
+        private bool disposedValue = false; // To detect redundant calls
+
+        protected virtual void Dispose(bool disposing)
+        {
+            var nodesFilePath = Path.Combine(PathHelper.TorrentsPath, "SessionState");
+            var data = torrentSession.SaveState();
+            File.WriteAllBytes(nodesFilePath, data);
+
+            if (!disposedValue)
+            {
+                if (disposing)
+                {
+                    Downloads.Clear();
+                    foreach (var torrent in Downloads)
+                    {
+                        torrentSession.RemoveTorrent(torrent.TorrentHandle);
+                        torrent.Dispose();
+                    }
+
+                    torrentSession.Dispose();
+                }
+
+                disposedValue = true;
+            }
+        }
+
+        // This code added to correctly implement the disposable pattern.
+        public void Dispose()
+        {
+            Dispose(true);
+        }
+        #endregion
     }
 }

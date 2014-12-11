@@ -1,27 +1,31 @@
-﻿using System.Threading.Tasks;
-using MonoTorrent.Client;
-using MonoTorrent.Common;
-using System.IO;
+﻿using System.IO;
 using Tyrannotorrent.Helpers;
+using Ragnar;
+using System;
+using System.Threading.Tasks;
 
 namespace Tyrannotorrent.Factories
 {
     class TorrentFileTorrentManagerFactory : TorrentManagerFactory
     {
+
 #pragma warning disable CS1998
-        public override async Task<TorrentManager> CreateTorrent(string file)
+        public override async Task<TorrentHandle> CreateTorrent(Session session, string file)
 #pragma warning restore CS1998
         {
+            var torrentInformation = new TorrentInfo(file);
+            var torrentDestinationPath = Path.Combine(PathHelper.TorrentsPath, torrentInformation.Name + ".torrent");
+            if (!File.Exists(torrentDestinationPath))
+            {
+                File.Move(file, torrentDestinationPath);
+            }
 
-            var torrentContainerPath = StorageHelper.TorrentsPath;
-            var torrentPath = Path.Combine(torrentContainerPath, Path.GetFileName(file));
-            File.Move(file, torrentPath);
-
-            var torrent = Torrent.Load(torrentPath);
-            var sanitizedName = SanitizeFilePath(torrent.Name);
-
-            var savePath = Path.Combine(StorageHelper.DownloadsPath, sanitizedName);
-            return new TorrentManager(torrent, savePath, TorrentSettings);
+            var savePath = Path.Combine(PathHelper.DownloadsPath, torrentInformation.Name);
+            return AddTorrent(session, new AddTorrentParams()
+            {
+                SavePath = savePath,
+                TorrentInfo = torrentInformation
+            });
 
         }
     }

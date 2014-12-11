@@ -1,49 +1,48 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
+﻿using Ragnar;
+using System.IO;
+using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
-using MonoTorrent.Client;
-using MonoTorrent;
-using System.IO;
-using MonoTorrent.Common;
 using Tyrannotorrent.Helpers;
 
 namespace Tyrannotorrent.Factories
 {
     class MagnetTorrentManagerFactory : TorrentManagerFactory
     {
-        private readonly ClientEngine engine;
 
-        public MagnetTorrentManagerFactory(ClientEngine engine)
+#pragma warning disable CS1998
+        public override async Task<TorrentHandle> CreateTorrent(Session session, string input)
+#pragma warning restore CS1998
         {
-            this.engine = engine;
-        }
+            var magnetTorrentHandle = session.AddTorrent(new AddTorrentParams()
+            {
+                Url = input
+            });
 
-        public override async Task<TorrentManager> CreateTorrent(string input)
-        {
-            var magnetLink = new MagnetLink(input);
+            //wait for metadata.
+            while (!magnetTorrentHandle.HasMetadata)
+            {
+                await Task.Delay(100);
+            }
 
-            var sanitizedName = SanitizeFilePath(magnetLink.Name ?? "Magnet link");
-            var savePath = Path.Combine(StorageHelper.DownloadsPath, sanitizedName);
-            var torrentSavePath = Path.Combine(StorageHelper.TorrentsPath, sanitizedName + ".torrent");
+            var torrentFile = magnetTorrentHandle.TorrentFile;
 
-            var torrentManager = new TorrentManager(magnetLink, savePath, TorrentSettings, torrentSavePath);
-            engine.Register(torrentManager);
+            //now create a proper torrent file.
+            var torrentPath = Path.Combine(PathHelper.TorrentsPath, torrentFile.Name + ".torrent");
+            if (!File.Exists(torrentPath))
+            {
+                using (var creator = new TorrentCreator(torrentFile))
+                {
+                    var torrentData = creator.Generate();
+                    File.WriteAllBytes(torrentPath, torrentData);
+                }
+            }
 
-            torrentManager.Start();
+            session.RemoveTorrent(magnetTorrentHandle);
+            magnetTorrentHandle.Dispose();
 
-            var dht = engine.DhtEngine;
-            dht.GetPeers(magnetLink.InfoHash);
-            
-            while (torrentManager.State == TorrentState.Stopped) await Task.Delay(1000);
-            while (torrentManager.State == TorrentState.Metadata) await Task.Delay(1000);
-
-            torrentManager.Stop();
-            torrentManager.Dispose();
-
-            var torrentFactory = new TorrentFileTorrentManagerFactory();
-            return await torrentFactory.CreateTorrent(torrentSavePath);
+            var fileFactory = new TorrentFileTorrentManagerFactory();
+            return await fileFactory.CreateTorrent(session, torrentPath);
         }
     }
 }

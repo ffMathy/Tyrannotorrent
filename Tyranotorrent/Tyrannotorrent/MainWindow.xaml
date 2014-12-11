@@ -34,8 +34,8 @@
                                 <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
                             <TextBlock VerticalAlignment="Center" TextTrimming="CharacterEllipsis" TextWrapping="Wrap" Margin="3" FontWeight="ExtraLight" Foreground="#333" FontSize="14" Text="{Binding Name, Mode=OneWay}" />
-                            <TextBlock Foreground="#CC000000" VerticalAlignment="Center" Grid.Column="1" Margin="3" Text="{Binding DownloadSpeed, Mode=OneWay}" HorizontalAlignment="Center" />
-                            <TextBlock Foreground="#CC000000" VerticalAlignment="Center" Grid.Column="2" Margin="3" Text="{Binding State, Mode=OneWay}" HorizontalAlignment="Center" />
+                            <TextBlock Foreground="#CC000000" VerticalAlignment="Center" Grid.Column="2" Margin="3" Text="{Binding DownloadSpeed, Mode=OneWay}" HorizontalAlignment="Center" />
+                            <TextBlock Foreground="#CC000000" VerticalAlignment="Center" Grid.Column="1" Margin="3" Text="{Binding TimeLeft, Mode=OneWay}" HorizontalAlignment="Center" />
                         </Grid>
                     </Grid>
                 </DataTemplate>

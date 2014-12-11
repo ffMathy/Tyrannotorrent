@@ -2,14 +2,15 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 
 namespace Tyrannotorrent.Helpers
 {
-    static class StorageHelper
+    static class PathHelper
     {
-        public static string GetPath(params string[] chunks)
+        public static string GetLocalPath(params string[] chunks)
         {
             var applicationDataPath = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
 
@@ -25,11 +26,20 @@ namespace Tyrannotorrent.Helpers
             return path;
         }
 
+        public static string CurrentExecutablePath
+        {
+            get
+            {
+                var assembly = Assembly.GetExecutingAssembly();
+                return assembly.Location;
+            }
+        }
+
         public static string TorrentsPath
         {
             get
             {
-                return GetPath("Torrents");
+                return GetLocalPath("Torrents");
             }
         }
 

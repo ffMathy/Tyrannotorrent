@@ -1,38 +1,23 @@
 ﻿namespace Tyrannotorrent.Factories
 {
-    using MonoTorrent.Client;
-    using System.IO;
-    using System.Linq;
+    using Ragnar;
     using System.Threading.Tasks;
-    using TorrentManager = MonoTorrent.Client.TorrentManager;
 
     abstract class TorrentManagerFactory
     {
 
-        protected TorrentSettings TorrentSettings { get; private set; }
-
-        public abstract Task<TorrentManager> CreateTorrent(string input);
+        public abstract Task<TorrentHandle> CreateTorrent(Session session, string input);
 
         protected TorrentManagerFactory()
         {
-            var torrentSettings = new TorrentSettings(5, int.MaxValue, 0, 25);
-            torrentSettings.EnablePeerExchange = true;
-            torrentSettings.UseDht = true;
-
-            this.TorrentSettings = torrentSettings;
         }
 
-        protected string SanitizeFilePath(string input)
+        protected TorrentHandle AddTorrent(Session session, AddTorrentParams addTorrentParams)
         {
-            var invalidPathCharacters = Path.GetInvalidPathChars();
-            var invalidFileNameCharacters = Path.GetInvalidFileNameChars();
+            //set the maximum upload to 16 kilobits per second.
+            addTorrentParams.UploadLimit = 16 * 1024;
 
-            foreach (var illegalCharacter in invalidPathCharacters.Union(invalidFileNameCharacters))
-            {
-                input = input.Replace(illegalCharacter, '_');
-            }
-            while (input.Contains("__")) input = input.Replace("__", "_");
-            return input;
+            return session.AddTorrent(addTorrentParams);
         }
     }
 }
