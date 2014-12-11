@@ -8,6 +8,8 @@ using Ragnar;
 using System.Windows;
 using System.IO;
 using Tyrannotorrent.Helpers;
+using System.Windows.Input;
+using Tyrannotorrent.Commands;
 
 namespace Tyrannotorrent.Facades
 {
@@ -61,8 +63,23 @@ namespace Tyrannotorrent.Facades
                     timeLeft += string.Format("{0:00}", Math.Max(1, minutes)) + "m ";
                 }
 
+                if (timeLeft != null && timeLeft.Length > 1)
+                {
+                    timeLeft = timeLeft.Substring(0, timeLeft.Length - 1);
+                }
+
                 return timeLeft;
             }
+        }
+
+        public Visibility StopButtonVisibility
+        {
+            get;set;
+        }
+
+        public Visibility StartButtonVisibility
+        {
+            get;set;
         }
 
         public string TorrentFilePath
@@ -177,31 +194,36 @@ namespace Tyrannotorrent.Facades
             this.mainThreadDispatcher = Dispatcher.CurrentDispatcher;
             this.torrentHandle = torrentManager;
 
+            StopButtonVisibility = Visibility.Visible;
+            StartButtonVisibility = Visibility.Collapsed;
+
             StartUpdateLoop();
         }
 
         private async void StartUpdateLoop()
         {
-            var count = 0;
             while (true)
             {
                 await Task.Delay(100);
 
-                var oldTorrentStatus = torrentStatus;
-                torrentStatus = torrentHandle.QueryStatus();
+                if (torrentHandle.IsPaused)
+                {
+                    lastDownloadSpeeds.AddFirst(0);
+                }
+                else
+                {
 
-                var currentSpeed = torrentStatus.DownloadRate;
-                lastDownloadSpeeds.AddFirst(currentSpeed);
+                    var oldTorrentStatus = torrentStatus;
+                    torrentStatus = torrentHandle.QueryStatus();
+
+                    var currentSpeed = torrentStatus.DownloadRate;
+                    lastDownloadSpeeds.AddFirst(currentSpeed);
+
+                }
 
                 while (lastDownloadSpeeds.Count > 1000 * 6)
                 {
                     lastDownloadSpeeds.RemoveLast();
-                }
-
-                count++;
-                if (count >= 100)
-                {
-                    count = 0;
                 }
 
                 averageDownloadSpeedShortTerm = (int)(lastDownloadSpeeds.Count > 0 ? lastDownloadSpeeds.Take(10).Average() : 0);
@@ -209,7 +231,7 @@ namespace Tyrannotorrent.Facades
 
                 NotifyPropertyChanged("DownloadSpeed");
                 NotifyPropertyChanged("Progress");
-                NotifyPropertyChanged("State");
+                NotifyPropertyChanged("TimeLeft");
                 NotifyPropertyChanged("Name");
 
                 //are we done?

@@ -7,30 +7,92 @@ using Tyrannotorrent.Factories;
 using System.Diagnostics;
 using Tyrannotorrent.Helpers;
 using Ragnar;
-using System.Threading;
+using System.Linq;
 using System.Threading.Tasks;
+using System.ComponentModel;
+using Tyrannotorrent.Commands;
+using System.Windows.Input;
 
 namespace Tyrannotorrent.ViewModels
 {
-    class MainWindowViewModel : IDisposable
+    class MainWindowViewModel : IDisposable, INotifyPropertyChanged
     {
+
+        private readonly Session torrentSession;
 
         public ObservableCollection<TorrentHandleViewModelFacade> Downloads { get; private set; }
 
         public bool ShutDownPC { get; set; }
 
-        private readonly Session torrentSession;
-
         private MainWindowViewModel()
         {
             Downloads = new ObservableCollection<TorrentHandleViewModelFacade>();
 
-            var random = new Random((int)DateTime.UtcNow.Ticks);
-
             torrentSession = new Session();
+
+            StopTorrentCommand = new RelayCommand((arg) => {
+                var torrent = (TorrentHandleViewModelFacade)arg;
+                torrent.StopButtonVisibility = Visibility.Collapsed;
+                torrent.StartButtonVisibility = Visibility.Visible;
+
+                var handle = torrent.TorrentHandle;
+                handle.Pause();
+
+                torrentSession.RemoveTorrent(handle);
+            });
+            StartTorrentCommand = new RelayCommand((arg) =>
+            {
+                var torrent = (TorrentHandleViewModelFacade)arg;
+                torrent.StartButtonVisibility = Visibility.Collapsed;
+                torrent.StopButtonVisibility = Visibility.Visible;
+
+                var handle = torrent.TorrentHandle;
+                handle.Resume();
+
+                torrentSession.AddTorrent(new AddTorrentParams()
+                {
+                    TorrentInfo = handle.TorrentFile
+                });
+            });
+            RemoveTorrentCommand = new RelayCommand((arg) =>
+            {
+                var torrent = (TorrentHandleViewModelFacade)arg;
+                RemoveTorrent(torrent);
+            });
 
             Load();
 
+        }
+
+        public ICommand StopTorrentCommand
+        {
+            get; private set;
+        }
+
+        public ICommand StartTorrentCommand
+        {
+            get; private set;
+        }
+
+        public ICommand RemoveTorrentCommand
+        {
+            get; private set;
+        }
+
+        public double Progress
+        {
+            get
+            {
+                return Downloads.Average(d => d.Progress) / 100.0;
+            }
+        }
+
+        public string Description
+        {
+            get
+            {
+                return string.Format("Downloading {0} " + (Downloads.Count > 0 ? "torrents" : "torrent"), Downloads.Count);
+            }
         }
 
         private async void Load()
@@ -106,6 +168,7 @@ namespace Tyrannotorrent.ViewModels
             var torrentHandle = await factory.CreateTorrent(torrentSession, input);
 
             var viewModel = new TorrentHandleViewModelFacade(torrentHandle);
+            viewModel.PropertyChanged += ViewModel_PropertyChanged;
             viewModel.TorrentDownloaded += ViewModel_TorrentDownloaded;
 
             Downloads.Add(viewModel);
@@ -113,19 +176,27 @@ namespace Tyrannotorrent.ViewModels
             StartupHelper.SetStartNextTimeWithWindows(true);
         }
 
-        private void ViewModel_TorrentDownloaded(TorrentHandleViewModelFacade torrent)
+        private void ViewModel_PropertyChanged(object sender, PropertyChangedEventArgs e)
         {
-            var torrentFilePath = torrent.TorrentFilePath;
-            if (File.Exists(torrentFilePath))
+            if (PropertyChanged != null)
             {
-                File.Delete(torrentFilePath);
+                PropertyChanged(this, e);
             }
 
-            var torrentDownloadPath = torrent.TorrentSavePath;
-            Process.Start(torrentDownloadPath);
+            NotifyPropertyChanged("Description");
+        }
 
-            torrentSession.RemoveTorrent(torrent.TorrentHandle);
-            Downloads.Remove(torrent);
+        private void NotifyPropertyChanged(string propertyName)
+        {
+            if (PropertyChanged != null)
+            {
+                PropertyChanged(this, new PropertyChangedEventArgs(propertyName));
+            }
+        }
+
+        private void ViewModel_TorrentDownloaded(TorrentHandleViewModelFacade torrent)
+        {
+            RemoveTorrent(torrent);
 
             if (Downloads.Count == 0)
             {
@@ -145,8 +216,25 @@ namespace Tyrannotorrent.ViewModels
 
         }
 
+        private void RemoveTorrent(TorrentHandleViewModelFacade torrent)
+        {
+            var torrentFilePath = torrent.TorrentFilePath;
+            if (File.Exists(torrentFilePath))
+            {
+                File.Delete(torrentFilePath);
+            }
+
+            var torrentDownloadPath = torrent.TorrentSavePath;
+            Process.Start(torrentDownloadPath);
+
+            torrentSession.RemoveTorrent(torrent.TorrentHandle);
+            Downloads.Remove(torrent);
+        }
+
         #region IDisposable Support
         private bool disposedValue = false; // To detect redundant calls
+
+        public event PropertyChangedEventHandler PropertyChanged;
 
         protected virtual void Dispose(bool disposing)
         {

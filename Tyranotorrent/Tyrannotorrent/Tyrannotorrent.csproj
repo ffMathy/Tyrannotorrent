@@ -64,10 +64,11 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
+    <Compile Include="Commands\RelayCommand.cs" />
     <Compile Include="Factories\MagnetTorrentManagerFactory.cs" />
     <Compile Include="Factories\TorrentFileTorrentManagerFactory.cs" />
     <Compile Include="Factories\TorrentManagerFactory.cs" />
-    <Compile Include="Facades\TorrentManagerObservableFacade.cs" />
+    <Compile Include="Facades\TorrentHandleObservableFacade.cs" />
     <Compile Include="Helpers\StartupHelper.cs" />
     <Compile Include="Helpers\StorageHelper.cs" />
     <Compile Include="ViewModels\MainWindowViewModel.cs" />
@@ -132,6 +133,7 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
