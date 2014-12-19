@@ -15,12 +15,15 @@ namespace Tyrannotorrent.Helpers
         {
             using (var key = Registry.CurrentUser.OpenSubKey(@"Software\Microsoft\Windows\CurrentVersion\RunOnce", true))
             {
-                if (startWithWindows)
+                if (!startWithWindows)
                 {
-                    var values = key.GetValueNames();
-                    if (values.Contains("Tyrannotorrent"))
+                    if (key != null)
                     {
-                        key.DeleteValue("Tyrannotorrent");
+                        var values = key.GetValueNames();
+                        if (values.Contains("Tyrannotorrent"))
+                        {
+                            key.DeleteValue("Tyrannotorrent");
+                        }
                     }
                 }
                 else
