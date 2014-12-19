@@ -13,7 +13,7 @@ namespace Tyrannotorrent.Helpers
     {
         public static void SetStartNextTimeWithWindows(bool startWithWindows)
         {
-            using (var key = Registry.CurrentUser.OpenSubKey(@"Software\Microsoft\Windows\CurrentVersion\RunOnce", true))
+            using (var key = Registry.CurrentUser.CreateSubKey(@"Software\Microsoft\Windows\CurrentVersion\RunOnce"))
             {
                 if (!startWithWindows)
                 {

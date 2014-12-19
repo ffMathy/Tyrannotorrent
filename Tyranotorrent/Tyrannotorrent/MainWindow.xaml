@@ -28,10 +28,10 @@
                         <Grid.ContextMenu>
                             <ContextMenu>
                                 <ContextMenu.Items>
-                                    <MenuItem CommandParameter="{Binding}" Command="{Binding Path=DataContext.StopTorrentCommand, ElementName=Frame}" Visibility="{Binding StopButtonVisibility}" Header="Stop" />
-                                    <MenuItem CommandParameter="{Binding}" Command="{Binding Path=DataContext.StartTorrentCommand, ElementName=Frame}" Visibility="{Binding StartButtonVisibility}" Header="Start" />
+                                    <MenuItem CommandParameter="{Binding}" Command="{Binding Path=DataContext.StopTorrentCommand, ElementName=Frame, UpdateSourceTrigger=PropertyChanged}" Visibility="{Binding StopButtonVisibility}" Header="Stop" />
+                                    <MenuItem CommandParameter="{Binding}" Command="{Binding Path=DataContext.StartTorrentCommand, ElementName=Frame, UpdateSourceTrigger=PropertyChanged}" Visibility="{Binding StartButtonVisibility}" Header="Start" />
                                     <Separator />
-                                    <MenuItem CommandParameter="{Binding}" Command="{Binding Path=DataContext.RemoveTorrentCommand, ElementName=Frame}" Header="Remove" />
+                                    <MenuItem CommandParameter="{Binding}" Command="{Binding Path=DataContext.RemoveTorrentCommand, ElementName=Frame, UpdateSourceTrigger=PropertyChanged}" Header="Remove" />
                                 </ContextMenu.Items>
                             </ContextMenu>
                         </Grid.ContextMenu>
