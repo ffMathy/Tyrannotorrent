@@ -34,60 +34,71 @@ namespace Tyrannotorrent.Facades
         {
             get
             {
-                var totalSeconds = averageDownloadSpeedLongTerm == 0 ? 0 : (torrentHandle.TorrentFile.TotalSize - torrentStatus.TotalDownload) / averageDownloadSpeedLongTerm;
+                try
+                {
+                    using (var torrentFile = torrentHandle.TorrentFile)
+                    {
+                        var totalSeconds = averageDownloadSpeedLongTerm == 0 ? 0 : (torrentFile.TotalSize - torrentStatus.TotalDownload) / averageDownloadSpeedLongTerm;
 
-                var minutes = Math.Ceiling(totalSeconds / 60.0 % 60.0);
-                var hours = Math.Floor(totalSeconds / 60.0 / 60.0 % 60.0);
-                var days = Math.Floor(totalSeconds / 60.0 / 60.0 / 60.0 % 24.0);
-                var months = Math.Floor(totalSeconds / 60.0 / 60.0 / 60.0 / 24.0 % 30.5);
-                var years = Math.Floor(totalSeconds / 60.0 / 60.0 / 60.0 / 24.0 / 30.5 % 12.0);
+                        var minutes = Math.Ceiling(totalSeconds / 60.0 % 60.0);
+                        var hours = Math.Floor(totalSeconds / 60.0 / 60.0 % 60.0);
+                        var days = Math.Floor(totalSeconds / 60.0 / 60.0 / 60.0 % 24.0);
+                        var months = Math.Floor(totalSeconds / 60.0 / 60.0 / 60.0 / 24.0 % 30.5);
+                        var years = Math.Floor(totalSeconds / 60.0 / 60.0 / 60.0 / 24.0 / 30.5 % 12.0);
 
-                var timeLeft = "";
-                if (years > 0)
-                {
-                    timeLeft += years + "y ";
-                }
-                if (months > 0)
-                {
-                    timeLeft += months + "m ";
-                }
-                if (days > 0 && years == 0)
-                {
-                    timeLeft += days + "d ";
-                }
-                if (months == 0)
-                {
-                    timeLeft += string.Format("{0:00}", hours) + "h ";
-                }
-                if (days == 0)
-                {
-                    timeLeft += string.Format("{0:00}", Math.Max(1, minutes)) + "m ";
-                }
+                        var timeLeft = "";
+                        if (years > 0)
+                        {
+                            timeLeft += years + "y ";
+                        }
+                        if (months > 0)
+                        {
+                            timeLeft += months + "m ";
+                        }
+                        if (days > 0 && years == 0)
+                        {
+                            timeLeft += days + "d ";
+                        }
+                        if (months == 0)
+                        {
+                            timeLeft += string.Format("{0:00}", hours) + "h ";
+                        }
+                        if (days == 0)
+                        {
+                            timeLeft += string.Format("{0:00}", Math.Max(1, minutes)) + "m ";
+                        }
 
-                if (timeLeft != null && timeLeft.Length > 1)
-                {
-                    timeLeft = timeLeft.Substring(0, timeLeft.Length - 1);
-                }
+                        if (timeLeft != null && timeLeft.Length > 1)
+                        {
+                            timeLeft = timeLeft.Substring(0, timeLeft.Length - 1);
+                        }
 
-                return timeLeft;
+                        return timeLeft;
+                    }
+                }
+                catch (SEHException)
+                {
+                    return "N/A";
+                }
             }
         }
 
         public Visibility StopButtonVisibility
         {
-            get;set;
+            get; set;
         }
 
         public Visibility StartButtonVisibility
         {
-            get;set;
+            get; set;
         }
 
         public string TorrentFilePath
         {
             get
             {
-                return Path.Combine(PathHelper.TorrentsPath, torrentHandle.TorrentFile.Name + ".torrent");
+
+                using (var torrentFile = torrentHandle.TorrentFile) return Path.Combine(PathHelper.TorrentsPath, torrentFile.Name + ".torrent");
             }
         }
 
@@ -172,9 +183,12 @@ namespace Tyrannotorrent.Facades
         {
             get
             {
-                try {
-                    return torrentHandle.TorrentFile == null ? "Loading ..." : torrentHandle.TorrentFile.Name;
-                } catch(ExternalException) { return "Error!"; }
+                try
+                {
+                    using (var torrentFile = torrentHandle.TorrentFile)
+                        return torrentFile == null ? "Loading ..." : torrentFile.Name;
+                }
+                catch (SEHException) { return "N/A"; }
             }
         }
 
@@ -182,7 +196,8 @@ namespace Tyrannotorrent.Facades
         {
             get
             {
-                return Path.Combine(PathHelper.DownloadsPath, torrentHandle.TorrentFile.Name);
+
+                using (var torrentFile = torrentHandle.TorrentFile) return Path.Combine(PathHelper.DownloadsPath, torrentFile.Name);
             }
         }
 
@@ -208,6 +223,7 @@ namespace Tyrannotorrent.Facades
             while (true)
             {
                 await Task.Delay(100);
+                if (torrentStatus != null) torrentStatus.Dispose();
 
                 if (torrentHandle.IsPaused)
                 {
@@ -216,7 +232,6 @@ namespace Tyrannotorrent.Facades
                 else
                 {
 
-                    var oldTorrentStatus = torrentStatus;
                     torrentStatus = torrentHandle.QueryStatus();
 
                     var currentSpeed = torrentStatus.DownloadRate;
