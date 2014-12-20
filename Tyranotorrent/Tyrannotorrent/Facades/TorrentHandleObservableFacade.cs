@@ -220,7 +220,10 @@ namespace Tyrannotorrent.Facades
                     torrentStatus = torrentHandle.QueryStatus();
 
                     var currentSpeed = torrentStatus.DownloadRate;
-                    lastDownloadSpeeds.AddFirst(currentSpeed);
+                    while (lastDownloadSpeeds.Count < 1000 * 6)
+                    {
+                        lastDownloadSpeeds.AddFirst(currentSpeed);
+                    }
 
                 }
 
