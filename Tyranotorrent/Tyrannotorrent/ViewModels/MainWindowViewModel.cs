@@ -83,7 +83,7 @@ namespace Tyrannotorrent.ViewModels
         {
             get
             {
-                return Downloads.Average(d => d.Progress) / 100.0;
+                return Downloads.Count == 0 ? 0 : Downloads.Average(d => d.Progress) / 100.0;
             }
         }
 
