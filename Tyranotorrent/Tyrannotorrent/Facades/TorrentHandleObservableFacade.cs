@@ -10,6 +10,7 @@ using System.IO;
 using Tyrannotorrent.Helpers;
 using System.Windows.Input;
 using Tyrannotorrent.Commands;
+using System.Runtime.InteropServices;
 
 namespace Tyrannotorrent.Facades
 {
@@ -171,7 +172,9 @@ namespace Tyrannotorrent.Facades
         {
             get
             {
-                return torrentHandle.TorrentFile == null ? "Loading ..." : torrentHandle.TorrentFile.Name;
+                try {
+                    return torrentHandle.TorrentFile == null ? "Loading ..." : torrentHandle.TorrentFile.Name;
+                } catch(ExternalException) { return "Error!"; }
             }
         }
 
