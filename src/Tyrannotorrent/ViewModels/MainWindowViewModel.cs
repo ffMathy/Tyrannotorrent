@@ -6,19 +6,19 @@ using Tyrannotorrent.Facades;
 using Tyrannotorrent.Factories;
 using System.Diagnostics;
 using Tyrannotorrent.Helpers;
-using Ragnar;
 using System.Linq;
 using System.Threading.Tasks;
 using System.ComponentModel;
 using Tyrannotorrent.Commands;
 using System.Windows.Input;
+using TorrentCore;
 
 namespace Tyrannotorrent.ViewModels
 {
     class MainWindowViewModel : IDisposable, INotifyPropertyChanged
     {
 
-        private readonly Session torrentSession;
+        private readonly ITorrentClient torrentSession;
 
         public ObservableCollection<TorrentHandleViewModelFacade> Downloads { get; private set; }
 
@@ -28,7 +28,7 @@ namespace Tyrannotorrent.ViewModels
         {
             Downloads = new ObservableCollection<TorrentHandleViewModelFacade>();
 
-            torrentSession = new Session();
+            torrentSession = TorrentClient.Create();
 
             StopTorrentCommand = new RelayCommand((arg) => {
                 var torrent = (TorrentHandleViewModelFacade)arg;
@@ -151,11 +151,7 @@ namespace Tyrannotorrent.ViewModels
         {
             TorrentManagerFactory factory;
 
-            if (input.StartsWith("magnet:"))
-            {
-                factory = new MagnetTorrentManagerFactory();
-            }
-            else if (File.Exists(input) && string.Equals(Path.GetExtension(input), ".torrent", StringComparison.OrdinalIgnoreCase))
+            if (File.Exists(input) && string.Equals(Path.GetExtension(input), ".torrent", StringComparison.OrdinalIgnoreCase))
             {
                 factory = new TorrentFileTorrentManagerFactory();
             }

@@ -1,0 +1,3 @@
+[submodule "ext/torrentcore"]
+	path = ext/torrentcore
+	url = https://github.com/SamuelFisher/torrentcore.git

@@ -6,4 +6,12 @@
     <UseWPF>true</UseWPF>
   </PropertyGroup>
 
+  <ItemGroup>
+    <PackageReference Include="BencodeNET" Version="3.0.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\ext\torrentcore\TorrentCore\TorrentCore.csproj" />
+  </ItemGroup>
+
 </Project>
